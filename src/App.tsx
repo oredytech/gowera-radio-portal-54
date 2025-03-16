@@ -8,8 +8,15 @@ import NewRadiosPage from './pages/NewRadiosPage'
 import SuggestRadioPage from './pages/SuggestRadioPage'
 import { useToast, ToastContainer } from './hooks/useToast'
 
-// Create a client
-const queryClient = new QueryClient()
+// Create a client with default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    }
+  }
+})
 
 function App() {
   const { toasts, dismissToast } = useToast()

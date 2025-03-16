@@ -18,3 +18,4 @@
 # Variables d'environnement qui peuvent être définies dans l'interface Netlify
 [build.environment]
   VITE_APP_ENV = "production"
+  NODE_VERSION = "18"
