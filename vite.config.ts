@@ -9,7 +9,16 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   return {
     plugins: [
       react(),
-      mode === 'development' && require('lovable-tagger').componentTagger(),
+      // Only load lovable-tagger in development mode and ensure it's not imported in production
+      mode === 'development' && (() => {
+        try {
+          // Dynamic import to avoid ESM vs CommonJS issues
+          return require('lovable-tagger').componentTagger()
+        } catch (e) {
+          console.warn('Failed to load lovable-tagger:', e)
+          return null
+        }
+      })(),
     ].filter(Boolean),
     resolve: {
       alias: {

@@ -1,6 +1,6 @@
 
 [build]
-  command = "NODE_ENV=production npm run build"
+  command = "npm run build"
   publish = "dist"
 
 # Single Page Application routing
@@ -19,7 +19,6 @@
 [build.environment]
   VITE_APP_ENV = "production"
   NODE_VERSION = "18"
-  NODE_ENV = "production"
   # Placeholder environment variables (will be overridden in Netlify UI)
   VITE_SUPABASE_URL = "placeholder"
   VITE_SUPABASE_ANON_KEY = "placeholder"
