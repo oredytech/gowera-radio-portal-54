@@ -48,6 +48,10 @@ export default defineConfig(async ({ mode }) => {
             'query-vendor': ['@tanstack/react-query']
           }
         }
+      },
+      // Add TypeScript options to prevent build errors related to tsconfig references
+      commonjsOptions: {
+        transformMixedEsModules: true
       }
     }
   }
