@@ -5,35 +5,24 @@ import path from 'path'
 import { componentTagger } from "lovable-tagger"
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  return {
+    plugins: [
+      react(),
+      mode === 'development' && componentTagger(),
+    ].filter(Boolean),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  server: {
-    host: "::",
-    port: 8080
-  },
-  // Add this to bypass TypeScript checking during build
-  optimizeDeps: {
-    esbuildOptions: {
-      tsconfigRaw: {
-        compilerOptions: {
-          experimentalDecorators: true,
-        }
-      }
-    }
-  },
-  build: {
-    // Skip type checking during build to avoid tsconfig.node.json issues
-    typescript: {
-      noEmit: false,
-      tsconfig: './tsconfig.json'
+    server: {
+      host: "::",
+      port: 8080
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: mode !== 'production'
     }
   }
-}))
+})
