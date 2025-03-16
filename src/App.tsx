@@ -5,11 +5,15 @@ import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
 import RadiosPage from './pages/RadiosPage'
 import NewRadiosPage from './pages/NewRadiosPage'
+import SuggestRadioPage from './pages/SuggestRadioPage'
+import { useToast, ToastContainer } from './hooks/useToast'
 
 // Create a client
 const queryClient = new QueryClient()
 
 function App() {
+  const { toasts, dismissToast } = useToast()
+
   return (
     <QueryClientProvider client={queryClient}>
       <Routes>
@@ -17,8 +21,10 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="radios" element={<RadiosPage />} />
           <Route path="nouvelles-radios" element={<NewRadiosPage />} />
+          <Route path="suggerer-radio" element={<SuggestRadioPage />} />
         </Route>
       </Routes>
+      <ToastContainer toasts={toasts} dismissToast={dismissToast} />
     </QueryClientProvider>
   )
 }

@@ -18,10 +18,10 @@ const HomePage = () => {
             Découvrir les radios
           </Link>
           <Link 
-            to="/nouvelles-radios" 
+            to="/suggerer-radio" 
             className="bg-secondary text-secondary-foreground px-6 py-3 rounded-md hover:bg-secondary/90"
           >
-            Nouvelles radios
+            Suggérer une radio
           </Link>
         </div>
       </section>
@@ -37,6 +37,21 @@ const HomePage = () => {
               <p className="text-muted-foreground">Genre musical</p>
             </div>
           ))}
+        </div>
+      </section>
+      
+      <section className="mt-16 w-full bg-muted p-8 rounded-lg">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">Vous connaissez une radio qui n'est pas sur Gowera ?</h2>
+          <p className="mb-6">
+            Aidez-nous à enrichir notre catalogue en suggérant de nouvelles radios !
+          </p>
+          <Link 
+            to="/suggerer-radio" 
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 inline-block"
+          >
+            Suggérer une radio
+          </Link>
         </div>
       </section>
     </div>

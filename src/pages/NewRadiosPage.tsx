@@ -1,68 +1,145 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useToast } from '../hooks/useToast'
 
-const DUMMY_PENDING_RADIOS = [
-  { 
-    id: 1, 
-    name: 'Afro Hits', 
-    genre: 'Afrobeat', 
-    country: 'Sénégal',
-    submittedBy: 'radio@afrobeats.com',
-    submittedAt: '2023-08-15'
-  },
-  { 
-    id: 2, 
-    name: 'Latino Mix', 
-    genre: 'Latino', 
-    country: 'Mexique',
-    submittedBy: 'contact@latinomix.fm',
-    submittedAt: '2023-08-12'
-  },
-  { 
-    id: 3, 
-    name: 'R&B Soul', 
-    genre: 'R&B', 
-    country: 'USA',
-    submittedBy: 'info@rbsoul.com',
-    submittedAt: '2023-08-10'
-  },
-]
+interface PendingRadio {
+  id: number
+  name: string
+  genre: string
+  country: string
+  submitted_by: string
+  submitted_at: string
+  stream_url: string
+}
 
 const NewRadiosPage = () => {
-  // Dans une application réelle, cet état serait synchronisé avec la base de données Supabase
-  const [pendingRadios, setPendingRadios] = useState(DUMMY_PENDING_RADIOS)
+  const [pendingRadios, setPendingRadios] = useState<PendingRadio[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
   
-  const handleApproveRadio = (id: number) => {
-    // Dans une application réelle, cette fonction:
-    // 1. Enverrait une requête à Supabase pour approuver la radio
-    // 2. Déplacerait la radio de la table "pending_radios" à "radios"
-    console.log(`Radio ${id} approuvée`)
-    
-    // Simulation: Supprimer de la liste des radios en attente
-    setPendingRadios(pendingRadios.filter(radio => radio.id !== id))
-    
-    // Afficher une notification
-    alert('Radio approuvée avec succès!')
+  useEffect(() => {
+    fetchPendingRadios()
+  }, [])
+  
+  const fetchPendingRadios = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('pending_radios')
+        .select('*')
+        .order('submitted_at', { ascending: false })
+      
+      if (error) {
+        throw error
+      }
+      
+      setPendingRadios(data || [])
+    } catch (error) {
+      console.error('Erreur lors de la récupération des radios en attente:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les radios en attente',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
   
-  const handleRejectRadio = (id: number) => {
-    // Dans une application réelle, cette fonction:
-    // 1. Enverrait une requête à Supabase pour rejeter la radio
-    // 2. Supprimerait la radio de la table "pending_radios"
-    console.log(`Radio ${id} rejetée`)
-    
-    // Simulation: Supprimer de la liste des radios en attente
-    setPendingRadios(pendingRadios.filter(radio => radio.id !== id))
-    
-    // Afficher une notification
-    alert('Radio rejetée.')
+  const handleApproveRadio = async (id: number) => {
+    try {
+      // 1. Récupérer les détails de la radio
+      const { data: radioToApprove, error: fetchError } = await supabase
+        .from('pending_radios')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (fetchError || !radioToApprove) {
+        throw fetchError || new Error('Radio non trouvée')
+      }
+      
+      // 2. Ajouter à la table des radios approuvées
+      const { error: insertError } = await supabase
+        .from('radios')
+        .insert([{
+          name: radioToApprove.name,
+          genre: radioToApprove.genre,
+          country: radioToApprove.country,
+          stream_url: radioToApprove.stream_url,
+          approved_at: new Date().toISOString()
+        }])
+      
+      if (insertError) {
+        throw insertError
+      }
+      
+      // 3. Supprimer de la table des radios en attente
+      const { error: deleteError } = await supabase
+        .from('pending_radios')
+        .delete()
+        .eq('id', id)
+      
+      if (deleteError) {
+        throw deleteError
+      }
+      
+      // 4. Mettre à jour l'interface
+      setPendingRadios(pendingRadios.filter(radio => radio.id !== id))
+      
+      toast({
+        title: 'Succès',
+        description: 'Radio approuvée avec succès!',
+      })
+    } catch (error) {
+      console.error('Erreur lors de l\'approbation de la radio:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'approuver la radio',
+        variant: 'destructive'
+      })
+    }
+  }
+  
+  const handleRejectRadio = async (id: number) => {
+    try {
+      // Supprimer de la table des radios en attente
+      const { error } = await supabase
+        .from('pending_radios')
+        .delete()
+        .eq('id', id)
+      
+      if (error) {
+        throw error
+      }
+      
+      // Mettre à jour l'interface
+      setPendingRadios(pendingRadios.filter(radio => radio.id !== id))
+      
+      toast({
+        title: 'Information',
+        description: 'Radio rejetée.',
+      })
+    } catch (error) {
+      console.error('Erreur lors du rejet de la radio:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de rejeter la radio',
+        variant: 'destructive'
+      })
+    }
   }
   
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Nouvelles radios en attente d'approbation</h1>
       
-      {pendingRadios.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : pendingRadios.length === 0 ? (
         <div className="text-center py-12 bg-muted rounded-lg">
           <p className="text-xl">Aucune nouvelle radio en attente d'approbation.</p>
         </div>
@@ -76,8 +153,9 @@ const NewRadiosPage = () => {
                   <div className="mt-2 space-y-1 text-muted-foreground">
                     <p><span className="font-medium">Genre:</span> {radio.genre}</p>
                     <p><span className="font-medium">Pays:</span> {radio.country}</p>
-                    <p><span className="font-medium">Soumis par:</span> {radio.submittedBy}</p>
-                    <p><span className="font-medium">Date de soumission:</span> {radio.submittedAt}</p>
+                    <p><span className="font-medium">URL du flux:</span> <a href={radio.stream_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{radio.stream_url}</a></p>
+                    <p><span className="font-medium">Soumis par:</span> {radio.submitted_by}</p>
+                    <p><span className="font-medium">Date de soumission:</span> {new Date(radio.submitted_at).toLocaleDateString()}</p>
                   </div>
                 </div>
                 
