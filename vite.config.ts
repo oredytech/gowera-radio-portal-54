@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { ConfigEnv, UserConfig } from 'vite'
 
 // Importer conditionnellement le componentTagger pour éviter les problèmes lors du build
 const loadTagger = () => {
@@ -18,7 +19,7 @@ const loadTagger = () => {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => {
   // Chargement conditionnel du tagger
   const taggerPromise = mode === 'development' ? loadTagger() : Promise.resolve(null)
   const componentTagger = await taggerPromise
@@ -35,7 +36,11 @@ export default defineConfig(async ({ mode }) => {
     },
     server: {
       host: "::",
-      port: 8080
+      port: 8080,
+      allowedHosts: [
+        'localhost',
+        'e213c281-cc16-4240-86e0-2430e5e7f74d.lovableproject.com'
+      ]
     },
     build: {
       outDir: 'dist',
