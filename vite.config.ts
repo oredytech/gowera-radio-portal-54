@@ -5,22 +5,11 @@ import path from 'path'
 import { ConfigEnv, UserConfig } from 'vite'
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => {
-  // Conditional import to avoid issues during build
-  let componentTagger = null
-  if (mode === 'development') {
-    try {
-      const tagger = await import('lovable-tagger')
-      componentTagger = tagger.componentTagger
-    } catch (e) {
-      console.warn('Failed to load lovable-tagger:', e)
-    }
-  }
-
+export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   return {
     plugins: [
       react(),
-      mode === 'development' && componentTagger,
+      mode === 'development' && require('lovable-tagger').componentTagger(),
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -47,12 +36,7 @@ export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => 
           }
         }
       },
-      // Enhanced TypeScript options to prevent build errors related to tsconfig references
-      commonjsOptions: {
-        transformMixedEsModules: true
-      },
       // Skip TypeScript checking during build to avoid tsconfig reference issues
-      // We rely on the IDE and development environment for type checking
       minify: true,
       target: 'es2018'
     },
