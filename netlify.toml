@@ -3,20 +3,23 @@
   command = "NODE_ENV=production npm run build"
   publish = "dist"
 
-# Gérer le routage SPA (Single Page Application)
+# Single Page Application routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Contrôle du cache pour les assets
+# Cache control for assets
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Variables d'environnement qui peuvent être définies dans l'interface Netlify
+# Environment variables
 [build.environment]
   VITE_APP_ENV = "production"
   NODE_VERSION = "18"
   NODE_ENV = "production"
+  # Placeholder environment variables (will be overridden in Netlify UI)
+  VITE_SUPABASE_URL = "placeholder"
+  VITE_SUPABASE_ANON_KEY = "placeholder"

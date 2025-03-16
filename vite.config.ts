@@ -4,25 +4,18 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { ConfigEnv, UserConfig } from 'vite'
 
-// Importer conditionnellement le componentTagger pour éviter les problèmes lors du build
-const loadTagger = () => {
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      // Utilisation de import() dynamique pour éviter les problèmes avec ESM
-      return import('lovable-tagger').then(module => module.componentTagger)
-    } catch (e) {
-      console.warn('Failed to load lovable-tagger:', e)
-      return null
-    }
-  }
-  return null
-}
-
 // https://vitejs.dev/config/
 export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => {
-  // Chargement conditionnel du tagger
-  const taggerPromise = mode === 'development' ? loadTagger() : Promise.resolve(null)
-  const componentTagger = await taggerPromise
+  // Conditional import to avoid issues during build
+  let componentTagger = null
+  if (mode === 'development') {
+    try {
+      const tagger = await import('lovable-tagger')
+      componentTagger = tagger.componentTagger
+    } catch (e) {
+      console.warn('Failed to load lovable-tagger:', e)
+    }
+  }
 
   return {
     plugins: [
