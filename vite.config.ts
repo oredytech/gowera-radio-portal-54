@@ -11,25 +11,31 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && {
-      name: 'lovable-tagger-plugin',
-      apply: 'serve',
-      enforce: 'post' as const,
-      transform(code, id) {
-        if (mode === 'development' && typeof window !== 'undefined') {
-          try {
-            // Only attempt to use the tagger in development mode
-            const componentTagger = require('lovable-tagger').componentTagger;
-            return componentTagger().transform?.(code, id) || code;
-          } catch (error) {
-            console.warn('Failed to load lovable-tagger:', error);
-            return code;
+    // Only use lovable-tagger in development mode, never in production
+    ...(mode === 'development' 
+      ? [{
+          name: 'lovable-tagger-plugin',
+          apply: 'serve',
+          enforce: 'post',
+          transform(code, id) {
+            // Safely try to use the tagger only in development
+            try {
+              if (typeof window === 'undefined') {
+                // Dynamically import the tagger only in dev
+                const componentTagger = require('lovable-tagger')?.componentTagger;
+                if (componentTagger) {
+                  return componentTagger().transform?.(code, id) || code;
+                }
+              }
+              return code;
+            } catch (error) {
+              console.warn('Failed to load lovable-tagger:', error);
+              return code;
+            }
           }
-        }
-        return code;
-      }
-    }
-  ].filter(Boolean),
+        }] 
+      : [])
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
