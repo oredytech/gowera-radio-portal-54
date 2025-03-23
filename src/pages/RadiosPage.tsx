@@ -1,16 +1,8 @@
 
 import { useState, useEffect } from 'react'
-import { Search } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { Search, Radio as RadioIcon } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
-
-interface Radio {
-  id: number
-  name: string
-  genre: string
-  country: string
-  stream_url: string
-}
+import { fetchRadios, searchRadios, Radio } from '../services/radioService'
 
 const RadiosPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -19,21 +11,22 @@ const RadiosPage = () => {
   const { toast } = useToast()
   
   useEffect(() => {
-    fetchRadios()
-  }, [])
+    if (searchTerm.length === 0) {
+      loadAllRadios()
+    } else {
+      const delaySearch = setTimeout(() => {
+        searchForRadios(searchTerm)
+      }, 500)
+      
+      return () => clearTimeout(delaySearch)
+    }
+  }, [searchTerm])
   
-  const fetchRadios = async () => {
+  const loadAllRadios = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('radios')
-        .select('*')
-      
-      if (error) {
-        throw error
-      }
-      
-      setRadios(data || [])
+      const data = await fetchRadios(100)
+      setRadios(data)
     } catch (error) {
       console.error('Erreur lors de la récupération des radios:', error)
       toast({
@@ -46,16 +39,31 @@ const RadiosPage = () => {
     }
   }
   
-  const filteredRadios = radios.filter(radio =>
-    radio.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    radio.genre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    radio.country.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const searchForRadios = async (term: string) => {
+    try {
+      setLoading(true)
+      const data = await searchRadios(term)
+      setRadios(data)
+    } catch (error) {
+      console.error('Erreur lors de la recherche des radios:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de rechercher des radios',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
   
-  const playRadio = (streamUrl: string) => {
+  const playRadio = (streamUrl: string, radioName: string) => {
     // Dans une version réelle, cela pourrait lancer un lecteur audio
     window.open(streamUrl, '_blank');
-    console.log(`Jouer la radio: ${streamUrl}`);
+    console.log(`Jouer la radio: ${radioName} (${streamUrl})`);
+    toast({
+      title: 'Lecture de la radio',
+      description: `Vous écoutez maintenant ${radioName}`,
+    })
   };
   
   return (
@@ -81,16 +89,31 @@ const RadiosPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRadios.map((radio) => (
+          {radios.map((radio) => (
             <div key={radio.id} className="bg-card shadow-md rounded-lg p-6">
-              <div className="w-16 h-16 bg-gray-200 rounded-full mb-4 mx-auto"></div>
+              <div className="w-16 h-16 bg-primary/10 rounded-full mb-4 mx-auto flex items-center justify-center">
+                {radio.favicon && radio.favicon !== "" ? (
+                  <img 
+                    src={radio.favicon} 
+                    alt={radio.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      // If image fails to load, show radio icon instead
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).parentElement!.classList.add('radio-icon-fallback');
+                    }}
+                  />
+                ) : (
+                  <RadioIcon className="w-8 h-8 text-primary" />
+                )}
+              </div>
               <h3 className="font-semibold text-center">{radio.name}</h3>
               <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-                <span>{radio.genre}</span>
+                <span>{radio.genre.split(',')[0]}</span>
                 <span>{radio.country}</span>
               </div>
               <button 
-                onClick={() => playRadio(radio.stream_url)} 
+                onClick={() => playRadio(radio.stream_url, radio.name)} 
                 className="w-full mt-4 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
               >
                 Écouter
@@ -100,7 +123,7 @@ const RadiosPage = () => {
         </div>
       )}
       
-      {!loading && filteredRadios.length === 0 && (
+      {!loading && radios.length === 0 && (
         <div className="text-center py-8">
           <p>Aucune radio ne correspond à votre recherche.</p>
         </div>

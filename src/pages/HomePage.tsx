@@ -1,16 +1,9 @@
 
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { Radio as RadioIcon } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
-
-interface Radio {
-  id: number
-  name: string
-  genre: string
-  country: string
-  stream_url: string
-}
+import { fetchPopularRadios, Radio } from '../services/radioService'
 
 const HomePage = () => {
   const [popularRadios, setPopularRadios] = useState<Radio[]>([])
@@ -18,23 +11,14 @@ const HomePage = () => {
   const { toast } = useToast()
   
   useEffect(() => {
-    fetchPopularRadios()
+    fetchPopularStations()
   }, [])
   
-  const fetchPopularRadios = async () => {
+  const fetchPopularStations = async () => {
     try {
       setLoading(true)
-      // Récupérer les 3 premières radios (à terme, vous pourriez ajouter une colonne "popular" ou compter les écoutes)
-      const { data, error } = await supabase
-        .from('radios')
-        .select('*')
-        .limit(3)
-      
-      if (error) {
-        throw error
-      }
-      
-      setPopularRadios(data || [])
+      const data = await fetchPopularRadios(3)
+      setPopularRadios(data)
     } catch (error) {
       console.error('Erreur lors de la récupération des radios populaires:', error)
       toast({
@@ -47,10 +31,14 @@ const HomePage = () => {
     }
   }
   
-  const playRadio = (streamUrl: string) => {
+  const playRadio = (streamUrl: string, radioName: string) => {
     // Dans une version réelle, cela pourrait lancer un lecteur audio
     window.open(streamUrl, '_blank');
-    console.log(`Jouer la radio: ${streamUrl}`);
+    console.log(`Jouer la radio: ${radioName} (${streamUrl})`);
+    toast({
+      title: 'Lecture de la radio',
+      description: `Vous écoutez maintenant ${radioName}`,
+    })
   };
 
   return (
@@ -90,22 +78,28 @@ const HomePage = () => {
               </div>
             ))
           ) : popularRadios.length > 0 ? (
-            // Afficher les radios depuis la base de données
+            // Afficher les radios depuis l'API
             popularRadios.map((radio) => (
               <div key={radio.id} className="bg-card shadow-md rounded-lg p-6 flex flex-col items-center">
-                <div className="w-24 h-24 bg-primary/10 rounded-full mb-4 flex items-center justify-center text-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
-                    <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
-                    <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
-                  </svg>
+                <div className="w-24 h-24 bg-primary/10 rounded-full mb-4 flex items-center justify-center">
+                  {radio.favicon && radio.favicon !== "" ? (
+                    <img 
+                      src={radio.favicon} 
+                      alt={radio.name}
+                      className="w-20 h-20 rounded-full object-cover"
+                      onError={(e) => {
+                        // If image fails to load, show radio icon instead
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <RadioIcon className="w-12 h-12 text-primary" />
+                  )}
                 </div>
                 <h3 className="font-semibold">{radio.name}</h3>
-                <p className="text-muted-foreground">{radio.genre}</p>
+                <p className="text-muted-foreground">{radio.genre.split(',')[0]}</p>
                 <button 
-                  onClick={() => playRadio(radio.stream_url)} 
+                  onClick={() => playRadio(radio.stream_url, radio.name)} 
                   className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 text-sm"
                 >
                   Écouter
